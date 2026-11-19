@@ -1,39 +1,6 @@
-// Replace these examples with your real Merchant Portal release notes.
-const updates = [
-  {
-    id: "orders-overview",
-    date: "2026-11-18",
-    category: "Orders",
-    tags: ["ORDERS", "NEW"],
-    title: "A clearer view of your orders",
-    summary:
-      "Find the details you need faster with a refreshed orders experience, designed to make everyday work feel a little simpler.",
-    details:
-      "This sample entry is here to show how a longer explanation can live behind a read-more control. Replace it with the customer-facing details for your release.",
-  },
-  {
-    id: "payment-activity",
-    date: "2026-11-04",
-    category: "Payments",
-    tags: ["PAYMENTS", "IMPROVEMENT"],
-    title: "More context in payment activity",
-    summary:
-      "Payment activity now brings useful transaction information together, so you can understand what happened without extra steps.",
-    details:
-      "Add any supporting information here, such as which users this change affects, where to find it, or what action they need to take.",
-  },
-  {
-    id: "account-overview",
-    date: "2026-10-21",
-    category: "Account",
-    tags: ["ACCOUNT", "UPDATE"],
-    title: "A more helpful account overview",
-    summary:
-      "We’ve made the account overview easier to scan, with important information organized where you expect to find it.",
-    details:
-      "This is placeholder content. Once you provide the real update title and description, we can refine this card and its category together.",
-  },
-];
+const RELEASE_NOTES_URL =
+  "https://filipposkargiotidis.github.io/OMNI-Customer-Model-Doc/release-notes.json";
+let updates = [];
 
 const list = document.querySelector("#updates-list");
 const searchInput = document.querySelector("#search");
@@ -118,6 +85,76 @@ function renderUpdate(update) {
   return article;
 }
 
+function validateUpdates(data) {
+  if (!Array.isArray(data)) {
+    throw new Error("The release-notes feed must contain a JSON array.");
+  }
+
+  const ids = new Set();
+  return data.map((update, index) => {
+    if (!update || typeof update !== "object" || Array.isArray(update)) {
+      throw new Error(`Release note ${index + 1} must be an object.`);
+    }
+
+    const requiredTextFields = ["id", "date", "category", "title", "summary"];
+    for (const field of requiredTextFields) {
+      if (typeof update[field] !== "string" || !update[field].trim()) {
+        throw new Error(`Release note ${index + 1} is missing "${field}".`);
+      }
+    }
+
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(update.id)) {
+      throw new Error(`Release note ${index + 1} has an invalid id.`);
+    }
+    if (ids.has(update.id)) {
+      throw new Error(`The release-notes feed has a duplicate id "${update.id}".`);
+    }
+    ids.add(update.id);
+
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(update.date) ||
+      new Date(`${update.date}T12:00:00Z`).toISOString().slice(0, 10) !==
+        update.date
+    ) {
+      throw new Error(`Release note "${update.id}" has an invalid date.`);
+    }
+
+    if (
+      !Array.isArray(update.tags) ||
+      update.tags.some((tag) => typeof tag !== "string")
+    ) {
+      throw new Error(`Release note "${update.id}" must have a string tags array.`);
+    }
+    if (update.details !== undefined && typeof update.details !== "string") {
+      throw new Error(`Release note "${update.id}" has invalid details.`);
+    }
+
+    return {
+      ...update,
+      details: update.details ?? "",
+    };
+  });
+}
+
+function renderCategoryOptions() {
+  const selectedCategory = categoryFilter.value;
+  const categories = [...new Set(updates.map((update) => update.category))].sort();
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = "All updates";
+
+  const options = categories.map((category) => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    return option;
+  });
+  categoryFilter.replaceChildren(allOption, ...options);
+  categoryFilter.value = categories.includes(selectedCategory)
+    ? selectedCategory
+    : "all";
+}
+
 function initializeExpandables() {
   if (!list.querySelector(".expandable")) {
     return;
@@ -160,19 +197,40 @@ function renderUpdates(refreshExpandables = false) {
   updateCount.textContent = `${filteredUpdates.length} ${
     filteredUpdates.length === 1 ? "UPDATE" : "UPDATES"
   }`;
+  emptyState.textContent =
+    updates.length === 0
+      ? "No product updates have been published yet."
+      : "No updates match your search. Try another term or category.";
   emptyState.hidden = filteredUpdates.length > 0;
 }
 
-const categories = [...new Set(updates.map((update) => update.category))].sort();
-for (const category of categories) {
-  const option = document.createElement("option");
-  option.value = category;
-  option.textContent = category;
-  categoryFilter.append(option);
+async function loadUpdates() {
+  emptyState.textContent = "Loading product updates…";
+  emptyState.hidden = false;
+
+  try {
+    const feedUrl = new URL(RELEASE_NOTES_URL);
+    feedUrl.searchParams.set("v", Date.now().toString());
+    const response = await fetch(feedUrl, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Release-notes feed request failed (${response.status}).`);
+    }
+
+    updates = validateUpdates(await response.json());
+    renderCategoryOptions();
+    renderUpdates(true);
+  } catch (error) {
+    console.error("Unable to load product updates.", error);
+    updateCount.textContent = "UPDATES UNAVAILABLE";
+    emptyState.textContent =
+      "Product updates couldn’t be loaded right now. Please try again later.";
+    emptyState.hidden = false;
+  }
 }
 
 searchInput.addEventListener("input", () => renderUpdates(true));
 categoryFilter.addEventListener("change", () => renderUpdates(true));
+renderCategoryOptions();
 renderUpdates();
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializePageComponents, {
@@ -181,3 +239,4 @@ if (document.readyState === "loading") {
 } else {
   initializePageComponents();
 }
+loadUpdates();
