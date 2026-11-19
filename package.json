@@ -1,0 +1,16 @@
+{
+  "name": "release-project",
+  "version": "1.0.0",
+  "description": "A lightweight, static release-notes page built with HTML, CSS, and vanilla JavaScript. The layout takes inspiration from the spacious editorial style of the Figma release-notes page without copying its branding or content.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@swedbankpay/design-guide": "^10.15.0"
+  }
+}
