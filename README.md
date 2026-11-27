@@ -24,13 +24,21 @@ Each feed entry has this shape:
   "category": "Orders",
   "tags": ["NEW"],
   "title": "A short, customer-friendly title",
+  "subtitle": "An optional smaller heading",
   "summary": "A one- or two-sentence overview shown on the update card.",
-  "details": "Optional extra context shown when the reader selects Read more."
+  "details": "Optional extra context shown inline below the summary.",
+  "media": {
+    "type": "image",
+    "url": "https://example.com/orders-overview.png",
+    "alt": "Preview of the orders overview"
+  }
 }
 ```
 
-The feed is a JSON array. Each entry requires a unique lowercase-hyphenated `id`, a `date` in `YYYY-MM-DD` format, `category`, `title`, `summary`, and a `tags` array of strings. `details` is optional. The page validates the feed before rendering it and displays an error if the feed cannot be fetched or is malformed.
+The feed is a JSON array. Each entry requires a unique lowercase-hyphenated `id`, a `date` in `YYYY-MM-DD` format, `category`, `title`, `summary`, and a `tags` array of strings. `subtitle`, `details`, and `media` are optional. When present, `media.type` can be `image` or `video`, `media.url` must use HTTP or HTTPS, and images require descriptive `media.alt` text. Video files are rendered with browser controls.
 
-The page automatically builds the category filter from the categories in the feed. Search checks the title, summary, details, category, and tags. The search field and category select use Design Guide form-control styles; update labels use Design Guide badges; and the read-more disclosure uses the Design Guide expandable component.
+The page automatically builds the category filter from the categories in the feed. Search checks the title, subtitle, summary, details, category, and tags. Update cards show the date, tags, and title in the left column; optional media, subtitle, summary, and details appear in the right column.
 
-The page's editorial layout and header remain custom, while typography, colors, buttons, form controls, badges, and expandable behavior come from Design Guide 10.15.0. The expandable JavaScript is re-initialized when search or category filtering renders new update cards.
+To preview the revised card layout and a mock image without changing the release-notes feed, open the local page with `?layout-preview` at the end of its URL (for example, `index.html?layout-preview`). The preview note is added only in that mode.
+
+The page's editorial layout and header remain custom, while typography, colors, buttons, form controls, and badges use Design Guide 10.15.0.
